@@ -1,24 +1,3 @@
-terraform {
-  required_version = ">= 1.0"
-
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
-    }
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0"
-    }
-  }
-}
-
-# Configure Google Provider
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
 # Enable required APIs
 resource "google_project_service" "cloudrun" {
   service            = "run.googleapis.com"
@@ -33,15 +12,6 @@ resource "google_project_service" "artifactregistry" {
 resource "google_project_service" "cloudbuild" {
   service            = "cloudbuild.googleapis.com"
   disable_on_destroy = false
-}
-
-# Configure Docker provider to use GCR
-provider "docker" {
-  registry_auth {
-    address  = "${var.region}-docker.pkg.dev"
-    username = "oauth2accesstoken"
-    password = data.google_client_config.default.access_token
-  }
 }
 
 # Get current project configuration
@@ -138,7 +108,6 @@ resource "google_cloud_run_service" "app" {
     latest_revision = true
   }
 
-
   depends_on = [
     google_project_service.cloudrun,
     docker_registry_image.app
@@ -151,20 +120,4 @@ resource "google_cloud_run_service_iam_member" "public" {
   location = google_cloud_run_service.app.location
   role     = "roles/run.invoker"
   member   = "allUsers"
-}
-
-# Outputs
-output "service_url" {
-  value       = google_cloud_run_service.app.status[0].url
-  description = "URL of the deployed Cloud Run service"
-}
-
-output "project_id" {
-  value       = var.project_id
-  description = "GCP Project ID"
-}
-
-output "region" {
-  value       = var.region
-  description = "GCP region"
 }

@@ -8,7 +8,11 @@ from typing import List
 from dotenv import load_dotenv
 from agents import Agent, Runner, trace
 
-from context import SECURITY_RESEARCHER_INSTRUCTIONS, get_analysis_prompt, enhance_summary
+from context import (
+    SECURITY_RESEARCHER_INSTRUCTIONS,
+    get_analysis_prompt,
+    enhance_summary,
+)
 from mcp_servers import create_semgrep_server
 
 load_dotenv(override=True)
@@ -49,13 +53,17 @@ class SecurityIssue(BaseModel):
         description="The specific vulnerable code snippet that demonstrates the issue"
     )
     fix: str = Field(description="Recommended code fix or mitigation strategy")
-    cvss_score: float = Field(description="CVSS score from 0.0 to 10.0 representing severity")
+    cvss_score: float = Field(
+        description="CVSS score from 0.0 to 10.0 representing severity"
+    )
     severity: str = Field(description="Severity level: critical, high, medium, or low")
 
 
 class SecurityReport(BaseModel):
     summary: str = Field(description="Executive summary of the security analysis")
-    issues: List[SecurityIssue] = Field(description="List of identified security vulnerabilities")
+    issues: List[SecurityIssue] = Field(
+        description="List of identified security vulnerabilities"
+    )
 
 
 def validate_request(request: AnalyzeRequest) -> None:
@@ -98,7 +106,9 @@ async def run_security_analysis(code: str) -> SecurityReport:
                     )  # Sends code and path to the file
                     # Changed the following two lines to sort by CVSS in descending order
                     sorted_report = result.final_output_as(SecurityReport)
-                    sorted_report.issues.sort(key=lambda issue: issue.cvss_score, reverse=True)
+                    sorted_report.issues.sort(
+                        key=lambda issue: issue.cvss_score, reverse=True
+                    )
 
                     return sorted_report
                 finally:

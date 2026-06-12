@@ -1,27 +1,3 @@
-terraform {
-  required_version = ">= 1.0"
-
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.6"
-    }
-  }
-}
-
-# Configure Azure Provider
-provider "azurerm" {
-  features {}
-}
-
 # Add a random acr_suffix to the acr name to make it globally unique.
 resource "random_string" "acr_suffix" {
   length  = 6
@@ -30,6 +6,7 @@ resource "random_string" "acr_suffix" {
   numeric = true
   special = false
 }
+
 locals {
   acr_basename = replace(var.project_name, "-", "") // only letters/numbers
   // keep base to <= 40 so base+6 <= 46 (under 50 char limit)
@@ -52,15 +29,6 @@ resource "azurerm_container_registry" "acr" {
   tags = {
     environment = terraform.workspace
     project     = var.project_name
-  }
-}
-
-# Configure Docker provider to use ACR
-provider "docker" {
-  registry_auth {
-    address  = azurerm_container_registry.acr.login_server
-    username = azurerm_container_registry.acr.admin_username
-    password = azurerm_container_registry.acr.admin_password
   }
 }
 
@@ -138,7 +106,6 @@ resource "azurerm_container_app" "main" {
         value = "production"
       }
 
-
       env {
         name  = "PYTHONUNBUFFERED"
         value = "1"
@@ -174,20 +141,4 @@ resource "azurerm_container_app" "main" {
     environment = terraform.workspace
     project     = var.project_name
   }
-}
-
-# Outputs
-output "app_url" {
-  value       = "https://${azurerm_container_app.main.ingress[0].fqdn}"
-  description = "URL of the deployed application"
-}
-
-output "acr_login_server" {
-  value       = azurerm_container_registry.acr.login_server
-  description = "Azure Container Registry login server"
-}
-
-output "resource_group" {
-  value       = data.azurerm_resource_group.main.name
-  description = "Resource group name"
 }
